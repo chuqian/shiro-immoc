@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       		http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+            http://www.springframework.org/schema/context
+            http://www.springframework.org/schema/context/spring-context-3.0.xsd
+            http://www.springframework.org/schema/tx
+            http://www.springframework.org/schema/tx/spring-tx-4.3.xsd
+            http://www.springframework.org/schema/aop
+            http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+            http://www.springframework.org/schema/util
+            http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+    
+    <import resource="classpath:spring-dao.xml"/>
+    <import resource="classpath:spring-redis.xml"/>
+	
+	<context:component-scan base-package="com.dao.impl" />
+	<context:component-scan base-package="com.cache" />
+	<context:component-scan base-package="com.util" />  
+    
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager" />
+		<property name="loginUrl" value="login.html" />
+		<property name="unauthorizedUrl" value="403.htm" />
+		<property name="filterChainDefinitions">
+			<value>
+				/login.html = anon
+				/subLogin.action = anon
+				/testRoles1 = roles["admin"]
+				/testPerms1 = perms["user:update"]
+				/testRolesFilter = rolesFilter["admin"]
+				/* = authc
+			</value>
+		</property>
+		<property name="filters">
+			<util:map>
+				<entry key="rolesFilter" value-ref="rolesFilter" />
+			</util:map>
+		</property>
+		
+	</bean>
+	
+	<bean id="rolesFilter" class="com.filter.RolesFilter">
+	</bean>
+	
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="customerRealm" />
+		<property name="sessionManager" ref="sessionManager" />
+		<property name="cacheManager" ref="cacheManager" />
+		<property name="rememberMeManager" ref="rememberMeManager" />
+	</bean>
+
+	<bean id="customerRealm" class="com.realm.CustomerRealm">
+		<property name="credentialsMatcher" ref="credentialsMatcher" />
+	</bean>	
+	
+	<bean id="credentialsMatcher" class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+		<property name="hashAlgorithmName" value="md5" />
+	</bean>
+	
+	<bean id="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+		<property name="sessionDAO" ref="sessionDAO" />
+	</bean>
+	
+	<bean id="sessionDAO" class="com.session.RedisSessionDao"></bean>
+	
+	<bean id="cacheManager" class="com.cache.RedisCacheManager"></bean>
+	
+	<bean id="rememberMeManager" class="import org.apache.shiro.web.mgt.CookieRememberMeManager">
+		<property name="cookie" ref="cookie" />
+	</bean>
+	
+	<bean id="cookie" class="org.apache.shiro.web.servlet.SimpleCookie">
+		<constructor-arg value="rememberMe" />
+		<property name="maxAge" value="60*60*365"></property>
+	</bean>
+	
+</beans>
